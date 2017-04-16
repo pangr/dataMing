@@ -1,0 +1,58 @@
+读入数据并展示数据摘要
+Adata<-read.table('D://data.txt',col.names=c('surgery','Age','Hospital Number','rectal temperature',
+'pulse','respiratory rate','temperature of extremities','peripheral pulse','mucous membranes','capillary refill time',
+'pain','peristalsis','abdominal distension','nasogastric tube','nasogastric reflux','nasogastric reflux PH',
+'rectal examination - feces','abdomen','packed cell volume','total protein','abdominocentesis appearance',
+'abdomcentesis total protein','outcome','surgical lesion','site of lesion','number is type','unknow','cp_data'),na.strings = c('?'))
+summary(Adata)
+
+
+利用直方图和qq图来展示数据
+library(car)
+par(mfrow=c(1,2))
+hist(Adata$rectal.temperature,prob=T,xlab='', main='Histogram of rectal.temperature', ylim=0:1)
+lines(density(Adata$rectal.temperature,na.rm=T))
+rug(jitter(Adata$rectal.temperature))
+qqPlot(Adata$rectal.temperature,main='Normal QQ plot of rectal.temperature')
+par(mfrow=c(1,1))
+
+
+利用盒图展示数据
+boxplot(Adata$rectal.temperature,ylab="rectal.temperature")
+rug(Adata$rectal.temperature,side=4)
+abline(h=mean(Adata$oPO4,na.rm=T),lty=2)
+
+
+
+利用剔除的方法
+omiteddata = na.omit(Adata)
+write.table(omiteddata,'D:/OmitedData.txt',col.names = F,row.names = F, quote = F)
+
+利用高频数值来插值
+library(DMwR)
+Adata1 <- centralImputation(Adata)
+write.table(Adata1,'D:/CentralImputationData.txt',col.names = F,row.names = F, quote = F)
+
+利用变量之间的相关关系来插值
+symnum(cor(Adata[,1:23],use='complete.obs'))
+lm(formula=rectal.temperature~surgery, data=Adata)
+Adata1 <- Adata
+fillPO4 <- function(oP){
+	if(is.na(oP))
+		return(NA)
+	else return (38.122193 + 0.00913 * oP)
+}
+Adata1[is.na(Adata1$rectal.temperature),'rectal.temperature'] <- sapply(Adata1[is.na(Adata1$rectal.temperature),'surgery'],fillPO4)
+write.table(Adata1,'D:/linearDefaultData.txt',col.names = F,row.names = F, quote = F)
+
+利用案例之间的关系来插值
+library(VIM)
+a <- kNN(Adata,k = 3)
+write.table(a[,1:28],'D:/knnImputationData.txt',col.names = F,row.names = F, quote = F)
+
+展示插值前后的变化
+library(car)
+par(mfrow=c(1,2))
+hist(Adata$rectal.temperature,prob=T,xlab='', main='Histogram of rectal.temperature before handle', ylim=0:1)
+hist(Adata1$rectal.temperature,prob=T,xlab='', main='Histogram of rectal.temperature after handle', ylim=0:1)
+par(mfrow=c(1,1))
